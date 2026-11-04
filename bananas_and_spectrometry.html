@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seeing the invisible · Light, bones and Machine Learning</title>
+<style>
+  :root{
+    --acc:#812711; --acc-soft:#F6ECE9; --ink:#333333; --ink2:#444444; --mut:#666666;
+    --line:#DDDDDD; --bg:#FBFAF8; --card:#FFFFFF;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:Aptos,Aptos_EmbeddedFont,Aptos_MSFontService,Calibri,Helvetica,Arial,sans-serif;
+    font-size:17px;line-height:1.6}
+  main{max-width:720px;margin:0 auto;padding:32px 18px 40px}
+  a{color:var(--acc)}
+  header .kicker{color:var(--acc);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+  h1{color:var(--acc);font-size:2.3rem;line-height:1.15;margin:.3em 0 .25em}
+  header .sub{color:var(--mut);font-size:1.1rem;margin:0}
+  header .meta{color:var(--mut);font-size:.85rem;margin-top:14px;font-style:italic}
+  section{margin-top:44px;padding-top:22px;border-top:1px solid var(--line)}
+  .num{display:inline-block;color:var(--acc);font-weight:700;font-size:.8rem;letter-spacing:.1em;margin-bottom:2px}
+  h2{color:var(--ink2);font-size:1.4rem;line-height:1.25;margin:0 0 .6em}
+  h3{color:var(--acc);font-size:1rem;margin:0 0 6px}
+  p{margin:0 0 .9em}
+  .callout{margin:18px 0;padding:2px 0 2px 14px;border-left:3px solid var(--acc);color:var(--mut)}
+  .callout b{color:var(--acc)}
+  .callout svg{width:22px;height:14px;vertical-align:-1px;margin-right:4px}
+  .figure{background:var(--card);border:1px solid #EAE6E2;border-radius:12px;padding:16px;margin:18px 0}
+  .figure svg{display:block;width:100%;height:auto}
+  #chart svg{width:100%;height:auto;overflow:visible}
+  .caption{color:var(--mut);font-size:.88rem;margin:10px 2px 0}
+  .small{font-size:.8rem;color:#888}
+
+  /* plátanos */
+  .bananas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}
+  .bananas svg{max-width:150px;margin:0 auto}
+  .bananas .st{font-weight:700;color:var(--ink2);font-size:.95rem}
+  .bananas .bx{color:var(--acc);font-weight:700;font-size:1.15rem;line-height:1.2}
+  .bananas .ds{color:var(--mut);font-size:.82rem;line-height:1.3}
+
+  /* chips */
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 12px}
+  .chip{font:inherit;font-size:.88rem;border:1px solid #CFC8C2;background:#fff;color:var(--ink2);
+    border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .chip i{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.25);display:inline-block}
+  .chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .chip:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.85rem;color:var(--mut);min-height:1.4em;margin-bottom:4px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:12px;height:12px;border-radius:2px;display:inline-block}
+  #chartText{min-height:3.2em}
+
+  /* ecos */
+  .duo{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:640px){.duo{grid-template-columns:1fr 1fr}}
+  .duo .tag{font-size:.8rem;color:var(--mut)}
+
+  /* tabla */
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);text-align:left;
+    padding:6px 6px;border-bottom:2px solid var(--line);font-weight:700;vertical-align:bottom}
+  td{padding:5px 6px;border-bottom:1px solid #EEE;vertical-align:middle}
+  td.spec{width:38%}
+  td.spec svg{width:100%;max-width:170px;height:40px;display:block}
+  td:last-child{white-space:nowrap}
+  tr.grp td{background:var(--acc-soft);color:var(--acc);font-weight:700;font-size:.8rem;padding:6px 8px;border-bottom:none}
+  tr.grp td span{font-weight:400;color:var(--mut)}
+  .muted{color:#999}
+  .ok{color:#2E7D32;font-weight:700}
+  .pred{color:var(--acc);font-weight:700}
+
+  /* tarjetas */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+  .card{background:var(--card);border:1px solid #EAE6E2;border-left:3px solid var(--acc);border-radius:8px;padding:12px 14px}
+  .card p{margin:0;font-size:.9rem;color:var(--mut);line-height:1.45}
+
+  /* veredictos */
+  .verdicts{display:grid;gap:8px;margin:14px 0}
+  .v{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);
+    border:1px solid #EAE6E2;border-radius:8px;padding:10px 14px}
+  .v .what{font-weight:700;color:var(--ink2)}
+  .v .what span{font-weight:400;color:var(--mut);display:block;font-size:.85rem}
+  .badge{font-size:.78rem;font-weight:700;border-radius:999px;padding:4px 10px;white-space:nowrap}
+  .b-ok{background:#E6F2E7;color:#2E7D32}
+  .b-no{background:#FBE9E7;color:#B23A22}
+  .b-test{background:var(--acc);color:#fff}
+  .b-q{background:#EFEFEF;color:#666}
+  .open{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .open span{border:1px dashed #BFB5AE;border-radius:999px;padding:6px 12px;font-size:.88rem;color:var(--ink2);background:#fff}
+
+  blockquote{margin:44px 0 0;padding:18px 20px;background:var(--acc-soft);border-left:3px solid var(--acc);
+    color:var(--acc);font-size:1.15rem;line-height:1.45;font-weight:700;border-radius:0 10px 10px 0}
+
+  .sources{font-size:.82rem;color:var(--mut)}
+  .sources li{margin-bottom:4px}
+
+  footer{max-width:720px;margin:0 auto;padding:0 18px 48px}
+  .sig{border-top:1px solid var(--line);padding-top:18px;font-size:.88rem;line-height:1.4}
+  .sig .nm{color:var(--acc);font-weight:700;font-size:1rem}
+  .sig .role{color:var(--ink2);font-weight:700;margin-top:6px}
+  .sig .tags{color:var(--mut);font-style:italic;margin:2px 0 10px}
+  .sig .org{color:var(--acc);font-weight:700}
+  .sig .orgl{color:var(--mut);margin-bottom:8px}
+  .sig .proj{margin-top:10px;padding-left:10px;border-left:3px solid var(--acc);color:var(--ink);font-size:.82rem}
+  .sig .proj b{color:var(--acc)}
+  .sig img{height:36px;margin-top:6px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="banana" viewBox="0 0 210 110">
+      <path d="M20,45 Q100,125 186,24 Q100,72 20,45 Z"/>
+      <path d="M184,26 L196,14" stroke="#5B4A2A" stroke-width="7" stroke-linecap="round" fill="none"/>
+    </symbol>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="#F4F2F0"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#E2DDD8" stroke-width="2"/>
+    </pattern>
+    <linearGradient id="visgrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#7B3FBF"/><stop offset=".18" stop-color="#3B6FD8"/>
+      <stop offset=".4" stop-color="#3FA34D"/><stop offset=".6" stop-color="#E2C21F"/>
+      <stop offset=".78" stop-color="#E8862A"/><stop offset="1" stop-color="#C9302C"/>
+    </linearGradient>
+    <linearGradient id="irgrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#8C3A30"/><stop offset="1" stop-color="#D9D2CD"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+    </marker>
+  </defs>
+</svg>
+
+<main>
+  <header>
+    <div class="kicker">A 5-minute note</div>
+    <h1>Seeing the invisible</h1>
+    <p class="sub">Light, materials and <i>Machine Learning</i>: how to estimate what is inside a sample without destroying it.</p>
+  </header>
+
+  <!-- 0 · PLÁTANO -->
+  <section style="border-top:none;margin-top:28px;padding-top:0">
+    <div class="figure">
+      <div class="bananas">
+        <div>
+          <svg viewBox="0 0 210 110"><use href="#banana" fill="#86AE3E"/></svg>
+          <div class="st">Green</div><div class="bx">≈ 2 °Brix</div><div class="ds">Little sugar, lots of starch</div>
+        </div>
+        <div>
+          <svg viewBox="0 0 210 110"><use href="#banana" fill="#F0C935"/></svg>
+          <div class="st">Yellow</div><div class="bx">≈ 14 °Brix</div><div class="ds">Sweet</div>
+        </div>
+        <div>
+          <svg viewBox="0 0 210 110"><use href="#banana" fill="#E2B33A"/>
+            <g fill="#6B4423"><circle cx="70" cy="70" r="4"/><circle cx="95" cy="80" r="3"/><circle cx="118" cy="72" r="5"/><circle cx="140" cy="62" r="3"/><circle cx="52" cy="60" r="3"/><circle cx="160" cy="48" r="3.5"/><circle cx="105" cy="66" r="2.5"/></g>
+          </svg>
+          <div class="st">Spotted</div><div class="bx">≈ 18 °Brix</div><div class="ds">Very sweet and soft</div>
+        </div>
+      </div>
+      <p class="caption">°Brix = Unit of measurement indicating the quantity of sugar per 100 grams of solution (2°Brix = 2% sugar).</p>
+    </div>
+    <p>We can tell how sweet a banana is <b>without opening it</b>, just by its colours (interaction with light).</p>
+    <p><b>Spectroscopy</b> allows us to analyse colours more closely, including some invisible interactions (infrared, ultraviolet).</p> 
+    <p>Light reflected by materials contains information about its <b>chemical composition</b>, like in the bananas (<a href="https://iopscience.iop.org/article/10.1088/1755-1315/752/1/012047" target="_blank" rel="noopener">see study</a>).</p> 
+    <p><b>We will do the same with bones.</b></p>
+  </section>
+
+  <!-- 1 · NO DESTRUCTIVA -->
+  <section>
+    <div class="num">01</div>
+    <h2>Measuring without damaging the sample</h2>
+    <div class="figure">
+      <svg viewBox="0 0 420 235" role="img" aria-label="A lamp lights up a bone and a sensor collects the reflected light">
+        <!-- lámpara -->
+        <text x="8" y="18" font-size="16" fill="#444" font-weight="700">1 · Lamp</text>
+        <circle cx="80" cy="74" r="20" fill="#FFE9A8" opacity=".6"/>
+        <path d="M62,30 H98 L108,68 H52 Z" fill="#555"/>
+        <circle cx="80" cy="71" r="9" fill="#FFD866"/>
+        <!-- rayos incidentes -->
+        <g stroke="#E8B730" stroke-width="3" marker-end="url(#arr)" fill="none">
+          <line x1="70" y1="88" x2="180" y2="166"/>
+          <line x1="84" y1="90" x2="196" y2="164"/>
+          <line x1="98" y1="88" x2="212" y2="163"/>
+        </g>
+        <!-- hueso -->
+        <g fill="#E6D8BE">
+          <circle cx="172" cy="177" r="10"/><circle cx="172" cy="193" r="10"/>
+          <circle cx="292" cy="177" r="10"/><circle cx="292" cy="193" r="10"/>
+          <rect x="172" y="177" width="120" height="16"/>
+        </g>
+        <text x="232" y="228" text-anchor="middle" font-size="16" fill="#444" font-weight="700">2 · Sample</text>
+        <!-- rayos reflejados -->
+        <g stroke-width="2.5" marker-end="url(#arr)" fill="none">
+          <line x1="236" y1="168" x2="330" y2="92" stroke="#3B6FD8"/>
+          <line x1="246" y1="169" x2="340" y2="94" stroke="#3FA34D"/>
+          <line x1="256" y1="170" x2="350" y2="96" stroke="#D8412F"/>
+          <line x1="266" y1="171" x2="360" y2="98" stroke="#8C5A4F" stroke-dasharray="5 4"/>
+        </g>
+        <!-- ojo/sensor -->
+        <path d="M322,68 Q356,40 390,68 Q356,96 322,68 Z" fill="#fff" stroke="#444" stroke-width="2"/>
+        <circle cx="356" cy="68" r="11" fill="#812711"/><circle cx="356" cy="68" r="4.5" fill="#222"/>
+        <text x="414" y="18" text-anchor="end" font-size="16" fill="#444" font-weight="700">3 · Sensor</text>
+        <text x="414" y="148" text-anchor="end" font-size="15" fill="#666">we measure the</text>
+        <text x="414" y="166" text-anchor="end" font-size="15" fill="#666">light that bounces</text>
+      </svg>
+    </div>
+    <p>The spectrometer lights up the sample with a <b>halogen lamp</b>, similar to the ones at home, and measures the light that bounces back. No cutting, no grinding, no preparation, and each measurement takes a few seconds.</p>
+    <p>It is what our eyes do when we see a colour, but much more precisely.</p>
+    <p>This is how colour works: a red object absorbs all colours except red, which it reflects back to our eyes.</p>
+  </section>
+
+  <!-- 2 · LONGITUDES DE ONDA -->
+  <section>
+    <div class="num">02</div>
+    <h2>Light has colours we cannot see</h2>
+    <p>Light can be split into <b>wavelengths</b>, measured in nanometres (nm). Our eyes only see from about 400 nm (violet) to 750 nm (red). Our spectrometer measures from <b>350 nm</b> (ultraviolet) to <b>2500 nm</b> (infrared).</p>
+    <div class="figure">
+      <svg viewBox="0 0 420 96" role="img" aria-label="Instrument range: 350 to 2500 nanometres; visible light is only a small band">
+        <g font-size="16" font-weight="700" text-anchor="middle">
+          <text x="58" y="24" fill="#444">visible</text>
+          <text x="250" y="24" fill="#8C3A30">infrared (invisible)</text>
+        </g>
+        <rect x="20" y="34" width="9" height="30" fill="#9C8FB5"/>
+        <rect x="29" y="34" width="62" height="30" fill="url(#visgrad)"/>
+        <rect x="91" y="34" width="309" height="30" fill="url(#irgrad)"/>
+        <g font-size="15" fill="#666">
+          <text x="18" y="86">350</text>
+          <text x="91" y="86" text-anchor="middle">750</text>
+          <text x="402" y="86" text-anchor="end">2500 nm</text>
+        </g>
+      </svg>
+      <p class="caption">What humans see is only a small band of what the instrument measures. Other instruments measures different ranges (for example, FTIR goes from 2500 to 25000 nm).</p>
+    </div>
+
+    <p>If we split the light into bands, we can measure <b>how much</b> the object reflects in each one. <i>Click on the examples:</i></p>
+    <div class="figure">
+      <div class="chips" id="chips"></div>
+      <div class="legend" id="legend"></div>
+      <div id="chart"></div>
+      <p class="caption" id="chartText"></p>
+    </div>
+  </section>
+
+  <!-- 3 · ECOS -->
+  <section>
+    <div class="num">03</div>
+    <h2>If it is so fast and harmless, why is it not used more?</h2>
+    <p>Other techniques, such as <b>FTIR or Raman</b>, see molecules directly: each molecule leaves its signature in a specific place. VisNIR, the range we work with, does not see the molecule itself, but its <b>echoes</b> (overtones), weaker signals that appear at other wavelengths and blend together.</p><div class="figure">
+      <div class="duo">
+        <div>
+          <h3>FTIR / Raman</h3>
+          <div class="tag">Each molecule in its own place</div>
+          <svg id="ecoA" viewBox="0 0 400 170" role="img" aria-label="Three sharp, separate peaks"></svg>
+        </div>
+        <div>
+          <h3>VisNIR</h3>
+          <div class="tag">Broad echoes that overlap</div>
+          <svg id="ecoB" viewBox="0 0 400 170" role="img" aria-label="Three broad curves that add up into one"></svg>
+        </div>
+      </div>
+    </div>
+    <p>On the other hand, VisNIR is <b>portable, fast and cheaper</b>. But reading those echoes by eye is almost impossible. We need help.</p>  </section>
+
+  <!-- 4 · ML -->
+  <section>
+    <div class="num">04</div>
+    <h2>This is where <i>Machine Learning</i> comes in</h2>
+    <p>We measure many samples <b>in both ways</b>, with light (fast and harmless) and in the lab (accurate, but destructive). The computer looks for the patterns in the spectrum that go with each result. We call this a <b>Machine Learning model</b>.</p>
+    <div class="figure" style="padding:10px 10px 12px">
+      <table>
+        <thead><tr><th>Sample</th><th>Spectrum<br><span style="text-transform:none;letter-spacing:0;font-weight:400">measured with light</span></th><th>Collagen<br><span style="text-transform:none;letter-spacing:0;font-weight:400">C14 lab</span></th><th>Model</th></tr></thead>
+        <tbody id="mlTable"></tbody>
+      </table>
+      <p class="caption">Illustrative data. The shaded band shows where, in this example, the collagen echoes change.</p>
+    </div>
+    <p>Before we trust it, the model takes a <b>test</b>: we show it spectra of samples it has never seen and compare its answers with the real lab results. If it passes, we can use it on new samples and get an estimate in seconds.</p>
+    </div>
+  </section>
+
+  <!-- 5 · INDUSTRIA -->
+  <section>
+    <div class="num">05</div>
+    <h2>Nothing new: it already works in other fields</h2>
+    <div class="cards">
+      <div class="card"><h3>Cereals</h3><p>Protein and moisture in grain. The classic use of near-infrared, for decades.</p></div>
+      <div class="card"><h3>Fruit</h3><p>Sugar and ripeness without cutting, right on the packing line.</p></div>
+      <div class="card"><h3>Recycling</h3><p>Sorting different types of plastic automatically on the conveyor belt.</p></div>
+      <div class="card"><h3>Pharmacy</h3><p>Checking that each pill contains what it should.</p></div>
+      <div class="card"><h3>Agriculture</h3><p>Soil organic matter and crop health, even from satellites.</p></div>
+    </div>
+  </section>
+
+  <!-- 6 · TRUCO -->
+  <section>
+    <div class="num">06</div>
+    <h2>So what is the catch?</h2>
+    <p>A model only knows what it has learned: <b>one specific material and one specific property</b>. If we change either of them, we have to check again that it works.</p>
+    <div class="verdicts">
+      <div class="v"><div class="what">Banana → sugar<span>Trained on bananas</span></div><div class="badge b-ok">Works</div></div>
+      <div class="v"><div class="what">Mango → sugar<span>Using the banana model</span></div><div class="badge b-no">Needs a new model</div></div>
+      <div class="v"><div class="what">Bone → collagen<span><a href="https://doi.org/10.1016/j.jas.2025.106448" target="_blank" rel="noopener">Ryder et al. 2026</a></span></div><div class="badge b-test">We will test it</div></div>
+      <div class="v"><div class="what">Tooth → collagen<span>Does the bone model work?</span></div><div class="badge b-q">Not tested</div></div>
+    </div>
+    <p>This opens up a huge field: testing <b>which properties of archaeological materials</b> can be estimated without destroying them.</p>
+    <div class="open">
+      <span>Burnt bone → what temperature?</span>
+      <span>Flint → was it heated?</span>
+      <span>Pottery → firing?</span>
+      <span>Sediment → organic matter?</span>
+    </div>
+    <blockquote>We do not replace the lab. We learn from it, so we can look at more samples, select them for further analysis, and speed up the process without damaging them.</blockquote>
+  </section>
+
+</main>
+
+<footer>
+  <div class="sig">
+    <div class="nm">Rubén Parrilla</div>
+    <div><a href="mailto:rpgiraldez@ualg.pt">rpgiraldez@ualg.pt</a></div>
+    <div class="role">Researcher</div>
+    <div class="tags">Prehistory • Spectroscopy • Optics • Machine Learning</div>
+    <div class="org">ICArEHB - Universidade do Algarve</div>
+    <div class="orgl">Interdisciplinary Center for Archaeology and Evolution of Human Behaviour</div>
+    <img src="https://lh3.googleusercontent.com/pw/AP1GczNK53FPc-fUxCdBb6rjxspl0I4F8IcMUf_L4qCN__5uTJs9UZIlslMePx-m9C_R8nmTJ1RQ83ZNpTLJPx1Wm7pHPjKRE0dlqSoTiwRpAp80YNWS2wipbQchYKUwoI6FP5FZOAwVfYaXv44r7bHUbVwz=w507-h97-s-no?authuser=0" alt="PAMSUR, ICArEHB, UAlg" onerror="this.style.display='none'">
+    <div class="proj"><b>Imaging an Invisible Archaeology</b>: Identifying physicochemical properties with contactless optical technologies and Artificial Intelligence. <a href="https://doi.org/10.54499/2023.07698.CEECIND/CP2883/CT0003" target="_blank" rel="noopener">(2023.07698.CEECIND/CP2883/CT0003)</a></div>
+  </div>
+</footer>
+
+<script>
+/* ---------- 02 · gráfico de columnas ---------- */
+const BINS = [
+  {n:'UV',      r:'350–400',  c:'#9C8FB5', vis:false},
+  {n:'Blue',    r:'400–490',  c:'#3B6FD8', vis:true},
+  {n:'Green',   r:'490–570',  c:'#3FA34D', vis:true},
+  {n:'Yellow',r:'570–620',  c:'#E2B714', vis:true},
+  {n:'Red',    r:'620–750',  c:'#D8412F', vis:true},
+  {n:'IR 1',    r:'750–1100', c:'#8C5A4F', vis:false},
+  {n:'IR 2',    r:'1100–1800',c:'#74483F', vis:false},
+  {n:'IR 3',    r:'1800–2500',c:'#5C3A34', vis:false}
+];
+const DATA = {
+  blanco:{label:'White', sw:'#FFFFFF', series:[{v:[70,88,90,90,90,88,80,70]}],
+    t:'Reflects almost all light in every band. That is why we see it as white.'},
+  negro:{label:'Black', sw:'#1E1E1E', series:[{v:[4,4,4,4,4,5,6,6]}],
+    t:'Absorbs almost all light and reflects almost nothing, visible or invisible.'},
+  amarillo:{label:'Yellow', sw:'#F0C935', series:[{v:[8,10,70,86,82,80,70,55]}],
+    t:'Absorbs blue and reflects green and red. Our brain reads that mix as yellow.'},
+  azul:{label:'Blue', sw:'#3B6FD8', series:[{v:[30,76,20,8,8,55,50,40]}],
+    t:'Reflects mostly blue and absorbs the rest of the visible light.'},
+  hojas:{label:'Real vs. plastic leaf', sw:'#3E7D2E', series:[
+      {name:'Real leaf', c:'#2F6B2A', v:[4,6,18,10,5,62,44,22]},
+      {name:'Plastic leaf', c:'#A9C98A', v:[4,6,18,10,5,14,12,10]}],
+    t:'In visible light they are almost identical: both are green. In the infrared, the real leaf reflects much more. There is information the eye cannot see, but the instrument can.'},
+  platanos:{label:'Bananas', sw:'#E2B714', series:[
+      {name:'Green', c:'#86AE3E', v:[4,6,30,18,8,60,45,22]},
+      {name:'Yellow', c:'#E2B714', v:[5,8,55,70,65,68,50,25]},
+      {name:'Spotted', c:'#7A5230', v:[5,7,40,50,45,58,42,20]}],
+    t:'The colour we see changes, and so does the infrared.'}
+};
+
+let CUR='amarillo';
+function drawChart(key){
+  CUR=key;
+  const d=DATA[key], host=document.getElementById('chart');
+  const W=Math.max(280, host.clientWidth||400), narrow=W<480;
+  const x0=narrow?40:52, x1=W-4, yT=46, yB=narrow?190:210, bw=(x1-x0)/BINS.length, Hh=yB+(narrow?58:46);
+  let s=`<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}" role="img" aria-label="Reflected light per band: ${d.label}" font-family="inherit">`;
+  BINS.forEach((b,i)=>{ if(!b.vis) s+=`<rect x="${x0+i*bw}" y="${yT}" width="${bw}" height="${yB-yT}" fill="url(#hatch)"/>`; });
+  [[0,1,narrow?'':'invisible'],[1,5,'what the eye sees'],[5,8,'invisible (infrared)']].forEach(([a,b,t])=>{
+    const xa=x0+a*bw+3, xb=x0+b*bw-3;
+    s+=`<path d="M${xa},${yT-4} V${yT-10} H${xb} V${yT-4}" fill="none" stroke="#BBB"/>`+
+       `<text x="${(xa+xb)/2}" y="${yT-16}" text-anchor="middle" font-size="12" fill="#777">${t}</text>`;
+  });
+  s+=`<line x1="${x0}" y1="${yB}" x2="${x1}" y2="${yB}" stroke="#999"/>`;
+  s+=`<text x="${x0-5}" y="${yT+10}" text-anchor="end" font-size="11" fill="#888">a lot</text>`+
+     `<text x="${x0-5}" y="${yB}" text-anchor="end" font-size="11" fill="#888">little</text>`+
+     `<text transform="translate(11,${(yT+yB)/2}) rotate(-90)" text-anchor="middle" font-size="12" fill="#666">reflected light</text>`;
+  const n=d.series.length, inner=bw*0.76, sw=inner/n;
+  d.series.forEach((se,k)=>{
+    se.v.forEach((v,i)=>{
+      const h=(yB-yT)*v/100, x=x0+i*bw+(bw-inner)/2+k*sw;
+      const fill=n===1?BINS[i].c:se.c, stroke=(n===1&&key==='blanco')?' stroke="#BBB"':'';
+      s+=`<rect x="${x+0.5}" y="${yB-h}" width="${Math.max(1,sw-1)}" height="${h}" rx="2" fill="${fill}"${stroke}/>`;
+    });
+  });
+  BINS.forEach((b,i)=>{
+    const cx=x0+i*bw+bw/2, col=b.vis?'#444':'#8C5A4F';
+    if(narrow){
+      s+=`<text transform="translate(${cx+4},${yB+12}) rotate(-40)" text-anchor="end" font-size="12" fill="${col}" font-weight="700">${b.n}</text>`;
+    }else{
+      s+=`<text x="${cx}" y="${yB+18}" text-anchor="middle" font-size="13" fill="${col}" font-weight="700">${b.n}</text>`+
+         `<text x="${cx}" y="${yB+34}" text-anchor="middle" font-size="11" fill="#999">${b.r} nm</text>`;
+    }
+  });
+  s+='</svg>';
+  host.innerHTML=s;
+  document.getElementById('chartText').textContent=d.t;
+  document.getElementById('legend').innerHTML=n>1
+    ? d.series.map(se=>`<span><i style="background:${se.c}"></i>${se.name}</span>`).join('') : '';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.k===key));
+}
+let rT; window.addEventListener('resize',()=>{clearTimeout(rT); rT=setTimeout(()=>drawChart(CUR),120);});
+(function(){
+  const box=document.getElementById('chips');
+  Object.entries(DATA).forEach(([k,d])=>{
+    const b=document.createElement('button'); b.className='chip'; b.dataset.k=k; b.type='button';
+    b.innerHTML=`<i style="background:${d.sw}"></i>${d.label}`;
+    b.onclick=()=>drawChart(k); box.appendChild(b);
+  });
+  drawChart('amarillo');
+})();
+
+/* ---------- 03 · ecos ---------- */
+const G=(x,m,s)=>Math.exp(-((x-m)**2)/(2*s*s));
+function path(fn, x0, x1, base){
+  let p=''; for(let x=x0;x<=x1;x+=2){ p+=(x===x0?'M':'L')+x+','+(base-fn(x)).toFixed(1); } return p;
+}
+(function(){
+  const base=140, peaks=[
+    {m:100,s:6,h:95,c:'#6E8CA0',t:'mineral'},
+    {m:205,s:5,h:80,c:'#812711',t:'collagen'},
+    {m:305,s:7,h:65,c:'#3B8FC2',t:'water'}];
+  let a=`<line x1="20" y1="${base}" x2="385" y2="${base}" stroke="#999"/>`;
+  peaks.forEach(p=>{
+    a+=`<path d="${path(x=>p.h*G(x,p.m,p.s),20,384,base)}" fill="none" stroke="${p.c}" stroke-width="2.5"/>`+
+       `<text x="${p.m}" y="${base-p.h-8}" text-anchor="middle" font-size="18" fill="${p.c}" font-weight="700">${p.t}</text>`;
+  });
+  a+=`<text x="385" y="${base+20}" text-anchor="end" font-size="15" fill="#999">wavelength →</text>`;
+  document.getElementById('ecoA').innerHTML=a;
+
+  const echoes=[{m:140,s:50,h:45,c:'#6E8CA0'},{m:205,s:45,h:40,c:'#812711'},{m:265,s:55,h:48,c:'#3B8FC2'}];
+  const sum=x=>echoes.reduce((t,e)=>t+e.h*G(x,e.m,e.s),0);
+  let b=`<line x1="20" y1="${base}" x2="385" y2="${base}" stroke="#999"/>`;
+  echoes.forEach(e=>{ b+=`<path d="${path(x=>e.h*G(x,e.m,e.s),20,384,base)}" fill="none" stroke="${e.c}" stroke-width="2" stroke-dasharray="5 4" opacity=".75"/>`; });
+  b+=`<path d="${path(sum,20,384,base)}" fill="none" stroke="#333" stroke-width="3"/>`;
+  b+=`<text x="205" y="${base-sum(205)-12}" text-anchor="middle" font-size="17" fill="#333" font-weight="700">what the instrument measures</text>`;
+  b+=`<text x="385" y="${base+20}" text-anchor="end" font-size="15" fill="#999">wavelength →</text>`;
+  document.getElementById('ecoB').innerHTML=b;
+})();
+
+/* ---------- 04 · tabla ---------- */
+function spark(col, alb){
+  const W=160,H=40, L0=350, L1=2500, X=l=>(l-L0)/(L1-L0)*W;
+  const r=l=> alb*(0.5+0.3*(1-Math.exp(-(l-350)/300))) - 0.08*G(l,380,40)
+      - 0.07*G(l,1450,45) - 0.11*G(l,1940,55) - col*0.02*(G(l,2055,40)+0.8*G(l,2175,35));
+  let p=''; for(let l=L0;l<=L1;l+=20){ const y=H-2-((r(l)-0.05)/0.85)*(H-4); p+=(l===L0?'M':'L')+X(l).toFixed(1)+','+y.toFixed(1); }
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><rect x="${X(2000)}" y="0" width="${X(2240)-X(2000)}" height="${H}" fill="#F6ECE9"/><path d="${p}" fill="none" stroke="#444" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+const fmt=v=>v.toLocaleString('en-GB',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+(function(){
+  const rows=[
+    {g:'Training', d:'the computer sees the spectrum and the result'},
+    {id:'H-01',col:0.4,alb:.95},{id:'H-02',col:1.1,alb:1.0},{id:'H-03',col:3.2,alb:.9},
+    {id:'H-04',col:5.6,alb:.97},{id:'H-05',col:9.8,alb:.92},{id:'H-06',col:14.5,alb:.98},
+    {g:'Test', d:'it only sees the spectrum; then we compare'},
+    {id:'H-07',col:4.1,alb:.94,pred:4.6},{id:'H-08',col:11.2,alb:.96,pred:10.3},
+    {g:'New sample', d:'not yet sent to the lab'},
+    {id:'H-09',col:7.0,alb:.95,pred:7.0,nw:true}
+  ];
+  document.getElementById('mlTable').innerHTML = rows.map(r=>{
+    if(r.g) return `<tr class="grp"><td colspan="4">${r.g} <span>· ${r.d}</span></td></tr>`;
+    const lab = r.nw ? '<span class="muted">—</span>' : fmt(r.col);
+    const mod = r.pred===undefined ? '<span class="muted">learns</span>'
+              : r.nw ? `<span class="pred">≈ ${Math.round(r.pred)}%</span>`
+              : `<span class="pred">${fmt(r.pred)}</span> <span class="ok">✓</span>`;
+    return `<tr><td>${r.id}</td><td class="spec">${spark(r.col,r.alb)}</td><td>${lab}</td><td>${mod}</td></tr>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>
