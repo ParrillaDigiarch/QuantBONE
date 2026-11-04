@@ -4,7 +4,7 @@
 
 VisNIR spectroscopy (350–2500 nm) and Machine Learning to estimate organic preservation in archaeological bone, such as collagen yield, without destroying the sample. The aim is to give researchers a fast, low-cost way to screen bones before sending them for radiocarbon dating or isotope analysis.
 
-👉 **New to spectroscopy or machine learning?** Start with the [5-minute explainer](https://ParrillaDigiarch.github.io/quantBONE/).
+👉 **New to spectroscopy or machine learning?** Start with the [5-minute explainer](https://parrilladigiarch.github.io/QuantBONE/).
 
 ## Current stage
 
